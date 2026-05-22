@@ -1,0 +1,18 @@
+{
+  "resources/js/assets/cpf.png": {
+    "file": "assets/cpf-COT0xpNC.png",
+    "src": "resources/js/assets/cpf.png"
+  },
+  "resources/js/main.tsx": {
+    "file": "assets/main-DEjV1XRE.js",
+    "name": "main",
+    "src": "resources/js/main.tsx",
+    "isEntry": true,
+    "css": [
+      "assets/main-DUl82sJJ.css"
+    ],
+    "assets": [
+      "assets/cpf-COT0xpNC.png"
+    ]
+  }
+}

@@ -58,8 +58,11 @@ database/database.sqlite-journal
 database/*.sqlite
 database/*.sqlite-journal
 
-# ─── Build assets (vão pra hospedagem via build remoto) ─
-/public/build
+# ─── Build assets ───────────────────────────────────────
+# Hospedagem compartilhada (ex: Hostinger) não tem node/npm.
+# Por isso o public/build/ É commitado: build local → git push → no servidor só git pull.
+# Apenas .DS_Store/temp dentro são ignorados.
+/public/build/.DS_Store
 
 # ─── Backups de dados do cliente ────────────────────────
 backup-*.json
