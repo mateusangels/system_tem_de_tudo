@@ -1,0 +1,8 @@
+# Hostinger / shared hosting: webroot é a raiz do projeto, mas o Laravel
+# espera atender por public/. Esse .htaccess faz o rewrite de qualquer
+# requisição pra dentro de public/, mantendo o resto do projeto fora do
+# alcance público.
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>

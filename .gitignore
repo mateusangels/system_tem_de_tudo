@@ -1,0 +1,75 @@
+# ─── Node / Vite ────────────────────────────────────────
+node_modules
+dist
+dist-ssr
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── Editores ───────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+.claude/
+
+# ─── Laravel ────────────────────────────────────────────
+/.phpunit.cache
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/storage/logs/*.log
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+!/storage/framework/cache/.gitignore
+!/storage/framework/sessions/.gitignore
+!/storage/framework/views/.gitignore
+/vendor
+/bootstrap/ssr
+/bootstrap/cache/*.php
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+/.fleet
+/sales
+
+# ─── Variáveis de ambiente (NUNCA commitar — pode ter senha) ─
+.env
+.env.backup
+.env.production
+.env.local
+
+# ─── Banco de dados local (SQLite) ──────────────────────
+database/database.sqlite
+database/database.sqlite-journal
+database/*.sqlite
+database/*.sqlite-journal
+
+# ─── Build assets (vão pra hospedagem via build remoto) ─
+/public/build
+
+# ─── Backups de dados do cliente ────────────────────────
+backup-*.json
+storage/app/backups/
+
+# ─── Screenshots / mockups (não vão pro deploy) ─────────
+/screenshots
+/mockups-construcao
+
+# ─── Logs de servidor temporários ───────────────────────
+srv.log
+srv-err.log
+*.log
