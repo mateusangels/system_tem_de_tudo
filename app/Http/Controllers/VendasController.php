@@ -6,6 +6,8 @@ use App\Models\Venda;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class VendasController extends Controller
 {
@@ -88,52 +90,85 @@ class VendasController extends Controller
             ], 422);
         }
 
-        $venda = DB::transaction(function () use ($data, $request) {
-            $proximoNumero = ((int) Venda::max('numero_venda')) + 1;
-            $isFiado = $data['metodo_pagamento'] === 'fiado';
+        try {
+            $venda = DB::transaction(function () use ($data, $request) {
+                $proximoNumero = ((int) Venda::max('numero_venda')) + 1;
+                $isFiado = $data['metodo_pagamento'] === 'fiado';
 
-            // Adiantamento (valor entregue na hora) só faz sentido pra fiado.
-            // Limitado ao total da venda — não permite pagar mais do que deve.
-            $adiantamento = $isFiado ? min((float) ($data['valor_pago_fiado'] ?? 0), (float) $data['total']) : 0;
-            $quitouNaHora = $isFiado && $adiantamento >= (float) $data['total'] - 0.01;
+                // Adiantamento (valor entregue na hora) só faz sentido pra fiado.
+                // Limitado ao total da venda — não permite pagar mais do que deve.
+                $adiantamento = $isFiado ? min((float) ($data['valor_pago_fiado'] ?? 0), (float) $data['total']) : 0;
+                $quitouNaHora = $isFiado && $adiantamento >= (float) $data['total'] - 0.01;
 
-            $venda = Venda::create([
-                'numero_venda' => $proximoNumero,
-                'cliente_id' => $data['cliente_id'] ?? null,
-                'operador_id' => $request->user()->id,
-                'subtotal' => $data['subtotal'],
-                'desconto_total' => $data['desconto_total'] ?? 0,
-                'total' => $data['total'],
-                'valor_pago' => $data['valor_pago'],
-                'troco' => $data['troco'] ?? 0,
-                'metodo_pagamento' => $data['metodo_pagamento'],
-                'status' => 'finalizada',
-                'tipo' => $data['tipo'] ?? 'pdv',
-                'vencimento_fiado' => $isFiado
-                    ? ($data['vencimento_fiado'] ?? now()->addDays(30)->toDateString())
-                    : null,
-                'valor_pago_fiado' => $adiantamento,
-                'quitado_em' => $quitouNaHora ? now() : null,
-                'forma_quitacao' => $quitouNaHora ? 'dinheiro' : null,
-                // Forçamos created_at = hora local (app.timezone). Por padrão o SQLite
-                // useCurrent() salva UTC, o que causaria deslocamento de +3h ao mostrar.
-                'created_at' => now(),
-            ]);
+                $venda = Venda::create([
+                    'numero_venda' => $proximoNumero,
+                    'cliente_id' => $data['cliente_id'] ?? null,
+                    'operador_id' => $request->user()->id,
+                    'subtotal' => $data['subtotal'],
+                    'desconto_total' => $data['desconto_total'] ?? 0,
+                    'total' => $data['total'],
+                    'valor_pago' => $data['valor_pago'],
+                    'troco' => $data['troco'] ?? 0,
+                    'metodo_pagamento' => $data['metodo_pagamento'],
+                    'status' => 'finalizada',
+                    'tipo' => $data['tipo'] ?? 'pdv',
+                    'vencimento_fiado' => $isFiado
+                        ? ($data['vencimento_fiado'] ?? now()->addDays(30)->toDateString())
+                        : null,
+                    'valor_pago_fiado' => $adiantamento,
+                    'quitado_em' => $quitouNaHora ? now() : null,
+                    'forma_quitacao' => $quitouNaHora ? 'dinheiro' : null,
+                    // Forçamos created_at = hora local (app.timezone). Por padrão o SQLite
+                    // useCurrent() salva UTC, o que causaria deslocamento de +3h ao mostrar.
+                    'created_at' => now(),
+                ]);
 
-            foreach ($data['itens'] as $item) {
-                $venda->itens()->create($item);
+                $agora = now();
+                foreach ($data['itens'] as $item) {
+                    // Normaliza defaults pra colunas NOT NULL com default no banco.
+                    // Se o frontend mandar null, o INSERT viola constraint em MySQL strict mode.
+                    $itemSeguro = array_merge([
+                        'codigo_barras' => '',
+                        'unidade' => 'UN',
+                        'desconto' => 0,
+                        'produto_id' => null,
+                    ], $item);
+                    $itemSeguro['codigo_barras'] = $itemSeguro['codigo_barras'] ?? '';
+                    $itemSeguro['unidade'] = $itemSeguro['unidade'] ?? 'UN';
+                    $itemSeguro['desconto'] = $itemSeguro['desconto'] ?? 0;
+                    // VendaItem tem $timestamps=false e migration usa useCurrent(); seto
+                    // explícito pra evitar surpresa de MySQL strict mode.
+                    $itemSeguro['created_at'] = $agora;
 
-                if (! empty($item['produto_id'])) {
-                    \App\Models\Produto::where('id', $item['produto_id'])
-                        ->where('movimenta_estoque', true)
-                        ->decrement('estoque_atual', $item['quantidade']);
+                    $venda->itens()->create($itemSeguro);
+
+                    if (! empty($itemSeguro['produto_id'])) {
+                        \App\Models\Produto::where('id', $itemSeguro['produto_id'])
+                            ->where('movimenta_estoque', true)
+                            ->decrement('estoque_atual', $itemSeguro['quantidade']);
+                    }
                 }
-            }
 
-            return $venda;
-        });
+                return $venda;
+            });
 
-        return response()->json($venda->load('itens'), 201);
+            return response()->json($venda->load('itens'), 201);
+        } catch (Throwable $e) {
+            // Log estruturado pra debugar 500 em produção sem expor stack ao cliente.
+            Log::error('VendasController@store falhou', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'payload_summary' => [
+                    'metodo' => $data['metodo_pagamento'] ?? null,
+                    'total' => $data['total'] ?? null,
+                    'qtd_itens' => is_array($data['itens'] ?? null) ? count($data['itens']) : 0,
+                ],
+            ]);
+            return response()->json([
+                'message' => 'Erro ao salvar a venda: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function proximoNumero(): JsonResponse
