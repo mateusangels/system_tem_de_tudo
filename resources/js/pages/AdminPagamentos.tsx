@@ -238,7 +238,7 @@ export default function AdminPagamentos() {
               </div>
               <div className="bg-primary/5 border border-primary/30 rounded p-3 text-xs">
                 <p className="font-bold text-foreground flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Ao confirmar:</p>
-                <p className="text-muted-foreground mt-1">A licença do cliente é estendida por +30 dias e o sistema é desbloqueado pra ele imediatamente.</p>
+                <p className="text-muted-foreground mt-1">A licença do cliente é estendida por +30 dias e o sistema é desbloqueado para ele imediatamente.</p>
               </div>
               <div className="flex gap-2 pt-2">
                 <Button variant="outline" className="flex-1" onClick={() => setMarcarOpen(false)}>Cancelar</Button>

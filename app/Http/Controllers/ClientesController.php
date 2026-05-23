@@ -47,13 +47,20 @@ class ClientesController extends Controller
         $data = $request->validate([
             'codigo_interno' => ['nullable', 'string', 'max:50'],
             'nome' => ['required', 'string', 'max:255'],
-            'cpf' => ['nullable', 'string', 'max:20'],
+            'cpf' => ['nullable', 'string', 'max:20', 'cpf_valido'],
             'telefone' => ['nullable', 'string', 'max:50'],
             'status' => ['nullable', 'string', 'in:ativo,inadimplente,inativo,bloqueado'],
             'limite_credito' => ['nullable', 'numeric', 'min:0'],
         ]);
 
+        // Colunas NOT NULL com default '' no banco — Laravel manda NULL se vier ausente, viola constraint
+        $data['codigo_interno'] = $data['codigo_interno'] ?? '';
+        $data['cpf'] = $data['cpf'] ?? '';
+        $data['telefone'] = $data['telefone'] ?? '';
+        $data['status'] = $data['status'] ?? 'ativo';
+        $data['limite_credito'] = $data['limite_credito'] ?? 0;
         $data['created_by'] = $request->user()->id;
+
         $cliente = Cliente::create($data);
 
         return response()->json($cliente, 201);
@@ -66,11 +73,18 @@ class ClientesController extends Controller
         $data = $request->validate([
             'codigo_interno' => ['nullable', 'string', 'max:50'],
             'nome' => ['sometimes', 'string', 'max:255'],
-            'cpf' => ['nullable', 'string', 'max:20'],
+            'cpf' => ['nullable', 'string', 'max:20', 'cpf_valido'],
             'telefone' => ['nullable', 'string', 'max:50'],
             'status' => ['nullable', 'string', 'in:ativo,inadimplente,inativo,bloqueado'],
             'limite_credito' => ['nullable', 'numeric', 'min:0'],
         ]);
+
+        // Normaliza nulls em campos NOT NULL no banco
+        foreach (['codigo_interno', 'cpf', 'telefone'] as $col) {
+            if (array_key_exists($col, $data) && $data[$col] === null) {
+                $data[$col] = '';
+            }
+        }
 
         $cliente->update($data);
 

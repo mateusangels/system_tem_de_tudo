@@ -325,10 +325,10 @@ const Configuracoes = () => {
                     <TableRow key={f.id}>
                       <TableCell className="text-sm font-medium">{f.nome}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{f.email}</TableCell>
-                      <TableCell className="text-sm capitalize">{f.cargo || 'funcionario'}</TableCell>
+                      <TableCell className="text-sm capitalize">{f.cargo || 'Funcionário'}</TableCell>
                       <TableCell className="text-sm">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${f.role === 'admin' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>
-                          {f.role || 'funcionario'}
+                          {f.role === 'admin' ? 'Admin' : 'Funcionário'}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">

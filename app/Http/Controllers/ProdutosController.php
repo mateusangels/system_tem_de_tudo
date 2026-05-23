@@ -166,6 +166,20 @@ class ProdutosController extends Controller
             'movimenta_estoque' => ['nullable', 'boolean'],
         ]);
 
+        // Colunas NOT NULL com default '' no banco — null explícito viola constraint
+        $data['codigo_barras'] = $data['codigo_barras'] ?? '';
+        $data['codigo_interno'] = $data['codigo_interno'] ?? '';
+        $data['categoria'] = $data['categoria'] ?? '';
+        $data['marca'] = $data['marca'] ?? '';
+        $data['unidade'] = $data['unidade'] ?? 'UN';
+        $data['preco_custo'] = $data['preco_custo'] ?? 0;
+        $data['preco_atacado'] = $data['preco_atacado'] ?? 0;
+        $data['qtd_minima_atacado'] = $data['qtd_minima_atacado'] ?? 0;
+        $data['estoque_minimo'] = $data['estoque_minimo'] ?? 0;
+        $data['estoque_atual'] = $data['estoque_atual'] ?? 0;
+        $data['ativo'] = $data['ativo'] ?? true;
+        $data['movimenta_estoque'] = $data['movimenta_estoque'] ?? true;
+
         $produto = Produto::create($data);
 
         return response()->json($produto, 201);
@@ -194,6 +208,13 @@ class ProdutosController extends Controller
             'estoque_atual' => ['nullable', 'numeric', 'min:0'],
             'movimenta_estoque' => ['nullable', 'boolean'],
         ]);
+
+        // Normaliza null em colunas NOT NULL
+        foreach (['codigo_barras', 'codigo_interno', 'categoria', 'marca'] as $col) {
+            if (array_key_exists($col, $data) && $data[$col] === null) {
+                $data[$col] = '';
+            }
+        }
 
         $produto->update($data);
 

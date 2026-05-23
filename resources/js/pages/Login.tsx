@@ -62,7 +62,7 @@ const Login = () => {
           {/* Card de login */}
           <div className="bg-card rounded-lg p-8 shadow-elevated border border-border text-foreground">
             <h2 className="text-lg font-bold mb-1">Acessar sistema</h2>
-            <p className="text-xs text-muted-foreground mb-6">Use suas credenciais pra entrar.</p>
+            <p className="text-xs text-muted-foreground mb-6">Use suas credenciais para entrar.</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-1.5">
@@ -107,7 +107,7 @@ const Login = () => {
             </form>
 
             <p className="text-[11px] text-muted-foreground text-center mt-6 leading-relaxed">
-              Não tem cadastro? Fale com o suporte pra criar sua conta.
+              Não tem cadastro? Fale com o suporte para criar sua conta.
             </p>
           </div>
 

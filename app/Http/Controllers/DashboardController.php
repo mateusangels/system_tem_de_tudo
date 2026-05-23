@@ -51,6 +51,11 @@ class DashboardController extends Controller
 
     public function completo(Request $request): JsonResponse
     {
+        $request->validate([
+            'start' => ['nullable', 'date'],
+            'end' => ['nullable', 'date', 'after_or_equal:start'],
+        ]);
+
         $start = $this->parsePeriodo($request->query('start'), now()->startOfMonth());
         $end = $this->parsePeriodo($request->query('end'), now()->endOfMonth(), true);
 

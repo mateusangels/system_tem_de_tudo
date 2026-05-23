@@ -23,7 +23,7 @@ export const AppHeader = ({ onToggleSidebar }: Props) => {
   const banner: { tipo: 'trial' | 'expirado' | 'licenca'; texto: string; cor: string; icone: any } | null =
     !isAdmin && licenca
       ? licenca.trial_expirado && !licenca.licenca_ativa
-        ? { tipo: 'expirado', texto: 'Teste expirado. Acesse Mensalidade pra pagar e liberar o sistema.', cor: 'bg-destructive text-white', icone: AlertTriangle }
+        ? { tipo: 'expirado', texto: 'Teste expirado. Acesse Mensalidade para pagar e liberar o sistema.', cor: 'bg-destructive text-white', icone: AlertTriangle }
         : licenca.em_trial
           ? {
               tipo: 'trial',
@@ -33,7 +33,7 @@ export const AppHeader = ({ onToggleSidebar }: Props) => {
             }
           : licenca.licenca_ativa
             ? null
-            : { tipo: 'expirado', texto: 'Licença expirada. Pague a mensalidade pra continuar.', cor: 'bg-destructive text-white', icone: AlertTriangle }
+            : { tipo: 'expirado', texto: 'Licença expirada. Pague a mensalidade para continuar.', cor: 'bg-destructive text-white', icone: AlertTriangle }
       : null;
 
   return (

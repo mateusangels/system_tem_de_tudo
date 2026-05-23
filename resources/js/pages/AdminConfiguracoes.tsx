@@ -72,12 +72,12 @@ export default function AdminConfiguracoes() {
 
   return (
     <div className="space-y-6 animate-fade-up max-w-4xl">
-      <PageHeader title="Configurações do PIX" description="Dados de cobrança usados pra mensalidade do sistema" />
+      <PageHeader title="Configurações do PIX" description="Dados de cobrança usados para a mensalidade do sistema" />
 
       <div className="bg-card rounded-lg border border-border overflow-hidden">
         <div className="px-5 py-3 border-b border-border bg-muted/40">
           <h3 className="font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-            <QrCode className="w-4 h-4 text-primary" /> Dados do PIX (mostrados pra clientes na tela "Mensalidade")
+            <QrCode className="w-4 h-4 text-primary" /> Dados do PIX (mostrados para clientes na tela "Mensalidade")
           </h3>
         </div>
         <div className="p-6 space-y-4">

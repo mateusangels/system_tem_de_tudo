@@ -41,7 +41,7 @@ export const TrialExpirado = () => {
     }
     await navigator.clipboard.writeText(pix.copia_cola || pix.chave || '');
     setCopied(true);
-    toast({ title: 'Copiado!', description: 'Cole no app do banco pra pagar.' });
+    toast({ title: 'Copiado!', description: 'Cole no app do banco para pagar.' });
     setTimeout(() => setCopied(false), 2500);
   };
 

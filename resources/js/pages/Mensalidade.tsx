@@ -47,7 +47,7 @@ export default function Mensalidade() {
     if (!data?.pix.copia_cola) return;
     await navigator.clipboard.writeText(data.pix.copia_cola);
     setCopied(true);
-    toast({ title: 'Copiado!', description: 'Código PIX copiado pra área de transferência.' });
+    toast({ title: 'Copiado!', description: 'Código PIX copiado para a área de transferência.' });
     setTimeout(() => setCopied(false), 2200);
   };
 

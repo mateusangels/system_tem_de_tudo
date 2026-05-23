@@ -76,10 +76,12 @@ function typeLabel(type: string): string {
 }
 
 /**
- * Valida um objeto contra um schema. Retorna mensagem de erro ou null.
+ * Valida um objeto contra um schema. Retorna mensagem de erro (com TODOS os erros
+ * em lista) ou null se válido.
  *
- * Se houver múltiplos campos inválidos, retorna o primeiro erro em destaque
- * e adiciona "(+ N outros campos)" no final pra deixar claro que tem mais.
+ * Quando há múltiplos erros, retorna formato:
+ *   "• Erro 1\n• Erro 2\n• Erro 3"
+ * Assim o toast/alerta mostra TODOS os problemas, não "(+N outros)".
  *
  * Uso:
  *   const erro = await validar(schema, dados);
@@ -97,10 +99,46 @@ export async function validar<T extends yup.AnySchema>(
       return err?.message || 'Erro de validação';
     }
     const erros = err.inner.length > 0 ? err.inner : [err];
-    const primeiro = erros[0].message;
-    if (erros.length === 1) return primeiro;
-    return `${primeiro} (+ ${erros.length - 1} ${erros.length - 1 === 1 ? 'outro problema' : 'outros problemas'})`;
+    if (erros.length === 1) return erros[0].message;
+    return erros.map(e => `• ${e.message}`).join('\n');
   }
+}
+
+// ─────────────────────────────────────────
+// Validação de CPF e CNPJ (dígitos verificadores)
+// ─────────────────────────────────────────
+export function validarCPF(cpf: string): boolean {
+  const c = cpf.replace(/\D/g, '');
+  if (c.length !== 11) return false;
+  // Rejeita sequências repetidas (111.111.111-11 etc)
+  if (/^(\d)\1{10}$/.test(c)) return false;
+
+  for (let t = 9; t < 11; t++) {
+    let d = 0;
+    for (let i = 0; i < t; i++) d += parseInt(c[i]) * (t + 1 - i);
+    d = ((10 * d) % 11) % 10;
+    if (parseInt(c[t]) !== d) return false;
+  }
+  return true;
+}
+
+export function validarCNPJ(cnpj: string): boolean {
+  const c = cnpj.replace(/\D/g, '');
+  if (c.length !== 14) return false;
+  if (/^(\d)\1{13}$/.test(c)) return false;
+
+  const calcDV = (tamanho: number, multiplicadores: number[]): number => {
+    let soma = 0;
+    for (let i = 0; i < tamanho; i++) soma += parseInt(c[i]) * multiplicadores[i];
+    const resto = soma % 11;
+    return resto < 2 ? 0 : 11 - resto;
+  };
+
+  const dv1 = calcDV(12, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  if (parseInt(c[12]) !== dv1) return false;
+  const dv2 = calcDV(13, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  if (parseInt(c[13]) !== dv2) return false;
+  return true;
 }
 
 // Aceita "12,50" (vírgula) e converte pra 12.50
@@ -167,10 +205,15 @@ export const clienteSchema = yup.object({
     .string()
     .nullable()
     .transform((v) => (v && String(v).trim() ? String(v).trim() : null))
-    .test('cpf-cnpj', 'CPF ou CNPJ em formato inválido.', (v) => {
+    .test('cpf-cnpj', 'CPF ou CNPJ inválido (verifique os dígitos).', (v) => {
       if (!v) return true; // opcional
       const onlyDigits = v.replace(/\D/g, '');
-      return cpfRegex.test(v) || cnpjRegex.test(v) || onlyDigits.length === 11 || onlyDigits.length === 14;
+      // Formato aceito
+      if (!cpfRegex.test(v) && !cnpjRegex.test(v) && onlyDigits.length !== 11 && onlyDigits.length !== 14) return false;
+      // DV check
+      if (onlyDigits.length === 11) return validarCPF(onlyDigits);
+      if (onlyDigits.length === 14) return validarCNPJ(onlyDigits);
+      return false;
     }),
   telefone: yup
     .string()
@@ -197,10 +240,12 @@ export const fornecedorSchema = yup.object({
     .string()
     .nullable()
     .transform((v) => (v ? String(v).trim() : null))
-    .test('cnpj', 'CNPJ em formato inválido.', (v) => {
+    .test('cnpj', 'CNPJ inválido (verifique os dígitos).', (v) => {
       if (!v) return true;
       const d = v.replace(/\D/g, '');
-      return d.length === 0 || d.length === 14;
+      if (d.length === 0) return true;
+      if (d.length !== 14) return false;
+      return validarCNPJ(d);
     }),
   email: yup
     .string()

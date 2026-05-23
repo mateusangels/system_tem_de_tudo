@@ -110,7 +110,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (_email: string, _password: string, _nome: string) => {
     throw new Error(
-      "Cadastro público desabilitado. Peça pra um admin criar a conta na tela de Configurações."
+      "Cadastro público desabilitado. Peça para um admin criar a conta na tela de Configurações."
     );
   };
 

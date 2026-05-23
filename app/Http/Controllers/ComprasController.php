@@ -147,7 +147,7 @@ class ComprasController extends Controller
     {
         $data = $request->validate([
             'nome' => ['required', 'string', 'max:255'],
-            'cnpj' => ['nullable', 'string', 'max:20'],
+            'cnpj' => ['nullable', 'string', 'max:20', 'cnpj_valido'],
             'telefone' => ['nullable', 'string', 'max:30'],
             'email' => ['nullable', 'email', 'max:120'],
             'contato' => ['nullable', 'string', 'max:80'],

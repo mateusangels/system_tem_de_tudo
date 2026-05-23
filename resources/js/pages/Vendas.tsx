@@ -143,7 +143,7 @@ export default function Vendas() {
     if (!tel || tel.length < 10) {
       toast({
         title: 'Cliente sem telefone',
-        description: 'Cadastre o telefone do cliente em /clientes pra usar o WhatsApp.',
+        description: 'Cadastre o telefone do cliente em /clientes para usar o WhatsApp.',
         variant: 'destructive',
       });
       return;
@@ -235,7 +235,7 @@ export default function Vendas() {
 
   return (
     <div className="p-6 space-y-6 animate-fade-up">
-      <PageHeader title="Historico de Vendas" description="Consulte todas as vendas realizadas">
+      <PageHeader title="Histórico de Vendas" description="Consulte todas as vendas realizadas">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Receipt className="w-4 h-4" />
           <span>{total} vendas encontradas</span>

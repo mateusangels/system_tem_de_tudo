@@ -4,12 +4,12 @@
     "src": "resources/js/assets/cpf.png"
   },
   "resources/js/main.tsx": {
-    "file": "assets/main-CfKRFrHh.js",
+    "file": "assets/main-Cm4SM3q3.js",
     "name": "main",
     "src": "resources/js/main.tsx",
     "isEntry": true,
     "css": [
-      "assets/main-DcR1nlmK.css"
+      "assets/main-B26ATwbs.css"
     ],
     "assets": [
       "assets/cpf-COT0xpNC.png"

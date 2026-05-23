@@ -10,6 +10,7 @@ import { formatBRL, formatQtd } from '@/lib/format';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 
 const CORES = ['#fbbf00', '#0f0f0f', '#dc2626', '#0ea5e9', '#10b981', '#8b5cf6'];
@@ -48,15 +49,26 @@ function periodoRange(periodo: Periodo, customStart?: string, customEnd?: string
 const toIsoDate = (d: Date) => d.toISOString().slice(0, 10);
 
 const Dashboard = () => {
+  const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<Periodo>('mes_atual');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [data, setData] = useState<DashboardCompleto | null>(null);
 
+  const customInvalido = periodo === 'custom' && customStart && customEnd && customEnd < customStart;
+
   const range = useMemo(() => periodoRange(periodo, customStart, customEnd), [periodo, customStart, customEnd]);
 
   useEffect(() => {
+    if (customInvalido) {
+      toast({
+        title: 'Período inválido',
+        description: 'A data final precisa ser maior ou igual à data inicial.',
+        variant: 'destructive',
+      });
+      return;
+    }
     let alive = true;
     setLoading(true);
     dashboardApi.completo(toIsoDate(range.start), toIsoDate(range.end))
@@ -64,7 +76,7 @@ const Dashboard = () => {
       .catch(console.error)
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
-  }, [range.start.getTime(), range.end.getTime()]);
+  }, [range.start.getTime(), range.end.getTime(), customInvalido]);
 
   if (loading || !data) return <LoadingState />;
 

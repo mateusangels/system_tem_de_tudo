@@ -205,8 +205,8 @@ export default function Compras() {
       toast({
         title: 'Compra criada!',
         description: qtdNovos > 0
-          ? `${qtdNovos} produto(s) cadastrado(s). Confira os preços de venda em /produtos. Clique "Receber" pra entrar no estoque.`
-          : 'Status: rascunho. Clique "Receber" pra entrar no estoque.',
+          ? `${qtdNovos} produto(s) cadastrado(s). Confira os preços de venda em /produtos. Clique "Receber" para entrar no estoque.`
+          : 'Status: rascunho. Clique "Receber" para entrar no estoque.',
       });
       setCompraModal(false);
       await carregar();
@@ -289,7 +289,7 @@ export default function Compras() {
           <div className="p-10 text-center text-muted-foreground">
             <Truck className="w-16 h-16 mx-auto opacity-30 mb-2" strokeWidth={1.2} />
             <p className="font-bold">Nenhuma compra cadastrada ainda</p>
-            <p className="text-xs mt-1">Cadastre o primeiro fornecedor pra começar.</p>
+            <p className="text-xs mt-1">Cadastre o primeiro fornecedor para começar.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -335,7 +335,7 @@ export default function Compras() {
           <h3 className="font-bold text-sm uppercase tracking-wider flex items-center gap-2"><Building2 className="w-4 h-4" /> Fornecedores</h3>
         </div>
         {fornecedores.length === 0 ? (
-          <div className="p-8 text-center text-muted-foreground text-sm">Cadastre o primeiro fornecedor pra começar.</div>
+          <div className="p-8 text-center text-muted-foreground text-sm">Cadastre o primeiro fornecedor para começar.</div>
         ) : (
           <div className="divide-y divide-border">
             {fornecedores.map(f => (
@@ -551,7 +551,7 @@ export default function Compras() {
               </div>
               <div>
                 <Label className="text-xs uppercase tracking-wider font-bold text-muted-foreground">Observação</Label>
-                <Input value={compraForm.observacao} onChange={e => setCompraForm({ ...compraForm, observacao: e.target.value })} placeholder="ex: Pedido pra reposição mensal" />
+                <Input value={compraForm.observacao} onChange={e => setCompraForm({ ...compraForm, observacao: e.target.value })} placeholder="ex: Pedido para reposição mensal" />
               </div>
             </div>
 

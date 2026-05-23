@@ -27,6 +27,7 @@ import {
   countVendasPendentes,
   type VendaPendente,
 } from '@/lib/offlineDb';
+import { validarCPF } from '@/lib/validators';
 import cpfImg from '@/assets/cpf.png';
 
 interface ItemVenda {
@@ -302,6 +303,16 @@ const PDV = () => {
     const opId = crypto.randomUUID();
     const agora = new Date();
     const valor = parseFloat(valorAbertura) || 0;
+
+    // Valida valor não-negativo
+    if (valor < 0) {
+      toast({
+        title: 'Valor inválido',
+        description: 'O valor de abertura do caixa não pode ser negativo.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     setCaixaAberto(true);
     setCaixaOperacaoId(opId);
@@ -727,7 +738,15 @@ const PDV = () => {
   };
 
   const finalizarVenda = async () => {
-    if (itens.length === 0 || finalizandoRef.current) return;
+    if (finalizandoRef.current) return;
+    if (itens.length === 0) {
+      toast({
+        title: 'Carrinho vazio',
+        description: 'Adicione produtos ao carrinho antes de finalizar.',
+        variant: 'destructive',
+      });
+      return;
+    }
     finalizandoRef.current = true;
     setFinalizando(true);
 
@@ -1283,7 +1302,7 @@ const PDV = () => {
               )}
               {metodoPagamento === 'fiado' && cliente && (
                 <div className="bg-orange-500/15 border border-orange-500 rounded-md px-2 py-1.5 text-[10px] text-orange-400 text-center font-semibold">
-                  Fiado pra <strong>{cliente.nome}</strong> · vence em 30 dias
+                  Fiado para <strong>{cliente.nome}</strong> · vence em 30 dias
                 </div>
               )}
 
@@ -1680,7 +1699,12 @@ const PDV = () => {
               onKeyDown={e => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
-                  if (cpfNota.replace(/\D/g, '').length === 11) {
+                  const digits = cpfNota.replace(/\D/g, '');
+                  if (digits.length === 11) {
+                    if (!validarCPF(digits)) {
+                      toast({ title: 'CPF inválido', description: 'Verifique os dígitos do CPF.', variant: 'destructive' });
+                      return;
+                    }
                     setCpfNotaModalOpen(false);
                   } else if (cpfNota.length === 0) {
                     // ENTER sem digitar nada = sem CPF
@@ -1704,7 +1728,14 @@ const PDV = () => {
               <Button
                 className="flex-1 gap-1"
                 disabled={cpfNota.replace(/\D/g, '').length !== 11}
-                onClick={() => setCpfNotaModalOpen(false)}
+                onClick={() => {
+                  const digits = cpfNota.replace(/\D/g, '');
+                  if (!validarCPF(digits)) {
+                    toast({ title: 'CPF inválido', description: 'Verifique os dígitos do CPF.', variant: 'destructive' });
+                    return;
+                  }
+                  setCpfNotaModalOpen(false);
+                }}
               >
                 <Check className="w-4 h-4" /> ENTER - OK
               </Button>
@@ -1718,7 +1749,7 @@ const PDV = () => {
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Receipt className="w-5 h-5 text-primary" /> Historico de Vendas
+              <Receipt className="w-5 h-5 text-primary" /> Histórico de Vendas
             </DialogTitle>
           </DialogHeader>
 
@@ -1912,7 +1943,7 @@ const PDV = () => {
                 }`}>
                   {cliente ? (
                     <>
-                      📒 Venda fiada pra <strong>{cliente.nome}</strong>
+                      📒 Venda fiada para <strong>{cliente.nome}</strong>
                       <p className="text-xs font-normal mt-0.5">Vence em 30 dias. Você pode receber o restante depois em /vendas.</p>
                     </>
                   ) : (

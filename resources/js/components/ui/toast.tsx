@@ -90,7 +90,9 @@ const ToastDescription = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Description>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Description>
 >(({ className, ...props }, ref) => (
-  <ToastPrimitives.Description ref={ref} className={cn("text-sm opacity-90", className)} {...props} />
+  // whitespace-pre-line preserva quebras de linha (\n) — usado quando o toast lista
+  // múltiplos erros de validação, um por linha.
+  <ToastPrimitives.Description ref={ref} className={cn("text-sm opacity-90 whitespace-pre-line", className)} {...props} />
 ));
 ToastDescription.displayName = ToastPrimitives.Description.displayName;
 
