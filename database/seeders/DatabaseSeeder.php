@@ -26,7 +26,10 @@ class DatabaseSeeder extends Seeder
                     'name' => 'Mateus Angels',
                     'password' => Hash::make('admin123'),
                     'licenca_ativa' => true,
-                    'licenca_ate' => now()->addYears(99),
+                    // 2037 é o limite do TIMESTAMP MySQL. Como admin nunca precisa
+                    // de licença na prática (isAdmin sempre tem podeAcessar=true),
+                    // qualquer data futura serve. Uso 2037 pra ficar dentro do limite.
+                    'licenca_ate' => '2037-12-31 23:59:59',
                 ]
             );
             Profile::firstOrCreate(['user_id' => $admin->id], [
