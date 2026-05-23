@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Configuracao;
+use App\Models\Produto;
 use App\Models\Venda;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class VendasController extends Controller
@@ -90,8 +93,53 @@ class VendasController extends Controller
             ], 422);
         }
 
+        // Pagamento em dinheiro tem que cobrir o total (exceto fiado).
+        // Pra débito/crédito/PIX, valor_pago = total (sem troco).
+        if ($data['metodo_pagamento'] !== 'fiado') {
+            $valorPago = (float) $data['valor_pago'];
+            $totalVenda = (float) $data['total'];
+            if ($valorPago + 0.01 < $totalVenda) {
+                $falta = number_format($totalVenda - $valorPago, 2, ',', '.');
+                return response()->json([
+                    'message' => "Valor recebido insuficiente. Falta R$ {$falta}.",
+                ], 422);
+            }
+        }
+
+        $permitirNegativo = Configuracao::get('permitir_estoque_negativo', '0') === '1';
+
         try {
-            $venda = DB::transaction(function () use ($data, $request) {
+            $venda = DB::transaction(function () use ($data, $request, $permitirNegativo) {
+                // === VALIDAÇÃO DE ESTOQUE (com lock pra evitar race condition) ===
+                // Agrupa quantidades por produto_id pra o caso do mesmo produto vir em
+                // múltiplos itens (ex: produto KG com 2 pesos diferentes).
+                $consumoPorProduto = [];
+                foreach ($data['itens'] as $item) {
+                    if (! empty($item['produto_id'])) {
+                        $pid = $item['produto_id'];
+                        $consumoPorProduto[$pid] = ($consumoPorProduto[$pid] ?? 0) + (float) $item['quantidade'];
+                    }
+                }
+
+                if (! empty($consumoPorProduto) && ! $permitirNegativo) {
+                    // Lock pra evitar 2 vendas simultâneas consumirem além do disponível.
+                    $produtos = Produto::whereIn('id', array_keys($consumoPorProduto))
+                        ->where('movimenta_estoque', true)
+                        ->lockForUpdate()
+                        ->get(['id', 'descricao', 'estoque_atual', 'unidade']);
+
+                    foreach ($produtos as $p) {
+                        $consumo = $consumoPorProduto[$p->id] ?? 0;
+                        $disponivel = (float) $p->estoque_atual;
+                        if ($consumo > $disponivel + 0.001) {
+                            $disp = rtrim(rtrim(number_format($disponivel, 3, ',', '.'), '0'), ',');
+                            throw ValidationException::withMessages([
+                                'estoque' => ["Estoque insuficiente para \"{$p->descricao}\". Disponível: {$disp} {$p->unidade}."],
+                            ]);
+                        }
+                    }
+                }
+
                 $proximoNumero = ((int) Venda::max('numero_venda')) + 1;
                 $isFiado = $data['metodo_pagamento'] === 'fiado';
 
@@ -143,7 +191,7 @@ class VendasController extends Controller
                     $venda->itens()->create($itemSeguro);
 
                     if (! empty($itemSeguro['produto_id'])) {
-                        \App\Models\Produto::where('id', $itemSeguro['produto_id'])
+                        Produto::where('id', $itemSeguro['produto_id'])
                             ->where('movimenta_estoque', true)
                             ->decrement('estoque_atual', $itemSeguro['quantidade']);
                     }
@@ -153,6 +201,12 @@ class VendasController extends Controller
             });
 
             return response()->json($venda->load('itens'), 201);
+        } catch (ValidationException $ve) {
+            // 422 dedicado pra erros de regra de negócio (estoque insuficiente, etc).
+            return response()->json([
+                'message' => $ve->validator->errors()->first(),
+                'errors' => $ve->errors(),
+            ], 422);
         } catch (Throwable $e) {
             // Log estruturado pra debugar 500 em produção sem expor stack ao cliente.
             Log::error('VendasController@store falhou', [

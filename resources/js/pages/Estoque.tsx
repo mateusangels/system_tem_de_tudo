@@ -19,6 +19,7 @@ export default function Estoque() {
   const { toast } = useToast();
   const [resumo, setResumo] = useState<ResumoEstoque | null>(null);
   const [ruptura, setRuptura] = useState<any[]>([]);
+  const [negativos, setNegativos] = useState<any[]>([]);
   const [movs, setMovs] = useState<MovimentacaoEstoque[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,14 +36,16 @@ export default function Estoque() {
   const carregar = async () => {
     setLoading(true);
     try {
-      const [r, rup, m, prods] = await Promise.all([
+      const [r, rup, neg, m, prods] = await Promise.all([
         estoqueApi.resumo(),
         estoqueApi.ruptura(),
+        estoqueApi.negativos(),
         estoqueApi.movimentacoes({ per_page: 30 }),
         produtosApi.list({ per_page: 200 }),
       ]);
       setResumo(r);
       setRuptura(rup.produtos);
+      setNegativos(neg.produtos);
       setMovs(m.data || []);
       setProdutos(prods.data || []);
     } catch (e: any) {
@@ -87,6 +90,39 @@ export default function Estoque() {
           <Plus className="w-4 h-4" /> Nova movimentação
         </Button>
       </PageHeader>
+
+      {/* Alerta de produtos com estoque negativo (precisam ajuste manual) */}
+      {negativos.length > 0 && (
+        <div className="bg-destructive/10 border-2 border-destructive rounded-lg p-3 sm:p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-bold text-sm text-destructive">
+                {negativos.length} {negativos.length === 1 ? 'produto está' : 'produtos estão'} com estoque NEGATIVO
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Provavelmente venda registrada antes do estoque ser ajustado. Faça uma entrada manual para corrigir.
+              </p>
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {negativos.slice(0, 8).map((p: any) => (
+                  <span key={p.id} className="text-[11px] bg-destructive/15 text-destructive px-2 py-0.5 rounded font-mono font-semibold">
+                    {p.descricao}: {formatQtd(p.estoque_atual)} {p.unidade}
+                  </span>
+                ))}
+                {negativos.length > 8 && (
+                  <span className="text-[11px] text-muted-foreground italic">+{negativos.length - 8} mais</span>
+                )}
+              </div>
+              <button
+                onClick={() => setModalOpen(true)}
+                className="text-[11px] font-bold text-destructive hover:underline mt-2 inline-block"
+              >
+                → Abrir nova movimentação para ajustar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-card rounded-lg border border-border p-4">

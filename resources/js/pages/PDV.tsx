@@ -40,6 +40,10 @@ interface ItemVenda {
   valor_unitario: number;
   desconto: number;
   valor_total: number;
+  // Estoque disponível no momento que o item foi adicionado (snapshot).
+  // Usado pra impedir incrementar/editar pra valor > disponível.
+  // null = produto não controla estoque (movimenta_estoque=false) → sem limite.
+  estoque_disponivel?: number | null;
 }
 
 interface ClientePDV {
@@ -268,11 +272,7 @@ const PDV = () => {
         toast({ title: 'Forma de pagamento', description: nomes[next] });
       } else if (e.key === 'F8') {
         e.preventDefault();
-        if (itens.length > 0) {
-          setFinalizarModalOpen(true);
-        } else {
-          toast({ title: '⚠️ Sem itens', description: 'Adicione produtos antes de finalizar' });
-        }
+        abrirFinalizar();
       } else if (e.key === 'F9') {
         e.preventDefault();
         abrirHistorico();
@@ -413,6 +413,47 @@ const PDV = () => {
     setCupomConfirmOpen(true);
   };
 
+  /**
+   * Verifica se há estoque suficiente pra adicionar/atualizar um item.
+   * Considera o que JÁ está no carrinho do mesmo produto (caso do mesmo
+   * produto adicionado várias vezes).
+   *
+   * @param produto      registro do produto vindo da API
+   * @param qtdDesejada  quantidade total que o item terá DEPOIS desta operação
+   * @param ignorarIdx   índice do item sendo editado (não conta na soma)
+   * @returns { ok: true } se passa, { ok: false, msg } se estoura
+   */
+  const verificarEstoque = (
+    produto: { id?: string; descricao?: string; estoque_atual?: any; movimenta_estoque?: boolean; unidade?: string },
+    qtdDesejada: number,
+    ignorarIdx?: number,
+  ): { ok: boolean; msg?: string; disponivel?: number } => {
+    // Produto sem controle de estoque → libera (serviços, encomenda etc)
+    if (produto?.movimenta_estoque === false) return { ok: true };
+    if (!produto?.id) return { ok: true };
+
+    const disponivel = Number(produto.estoque_atual ?? 0);
+
+    // Quanto desse mesmo produto JÁ está em outros itens do carrinho
+    const jaNoCarrinho = itens.reduce((acc, it, idx) => {
+      if (idx === ignorarIdx) return acc;
+      if (it.produto_id === produto.id) return acc + it.quantidade;
+      return acc;
+    }, 0);
+
+    const totalAposOp = jaNoCarrinho + qtdDesejada;
+    if (totalAposOp > disponivel + 0.001) {
+      const restante = Math.max(0, disponivel - jaNoCarrinho);
+      const fmt = (n: number) => Number(n.toFixed(3)).toString().replace('.', ',');
+      return {
+        ok: false,
+        disponivel,
+        msg: `Estoque insuficiente para "${produto.descricao}". Disponível: ${fmt(restante)} ${produto.unidade || ''}.`,
+      };
+    }
+    return { ok: true, disponivel };
+  };
+
   const addItemByBarcode = useCallback(async (code: string, prefetched?: any) => {
     if (!code.trim() || isAddingByBarcode) return;
     setIsAddingByBarcode(true);
@@ -449,6 +490,17 @@ const PDV = () => {
       return;
     }
 
+    // Valida estoque ANTES de adicionar (quantidade = 1)
+    const check = verificarEstoque(data, 1);
+    if (!check.ok) {
+      toast({ title: 'Estoque insuficiente', description: check.msg, variant: 'destructive' });
+      setBarcodeInput('');
+      setStatus('aberto');
+      setIsAddingByBarcode(false);
+      barcodeInputRef.current?.focus();
+      return;
+    }
+
     setItens(prev => [...prev, {
       id: crypto.randomUUID(),
       produto_id: data.id,
@@ -459,12 +511,13 @@ const PDV = () => {
       valor_unitario: Number(data.preco_venda),
       desconto: 0,
       valor_total: Number(data.preco_venda),
+      estoque_disponivel: data.movimenta_estoque === false ? null : Number(data.estoque_atual ?? 0),
     }]);
     setBarcodeInput('');
     setStatus('processando');
     setIsAddingByBarcode(false);
     setTimeout(() => barcodeInputRef.current?.focus(), 50);
-  }, [isAddingByBarcode]);
+  }, [isAddingByBarcode, itens]);
 
   const confirmarPeso = () => {
     if (!pesoProduto) return;
@@ -475,6 +528,13 @@ const PDV = () => {
       return;
     }
     const precoKg = Number(pesoProduto.preco_venda);
+
+    // Valida estoque (em KG). Se editando, ignora o item atual na soma.
+    const check = verificarEstoque(pesoProduto, peso, pesoEditIdx ?? undefined);
+    if (!check.ok) {
+      toast({ title: 'Estoque insuficiente', description: check.msg, variant: 'destructive' });
+      return;
+    }
 
     if (pesoEditIdx !== null) {
       setItens(prev => prev.map((item, idx) => idx === pesoEditIdx ? {
@@ -493,6 +553,7 @@ const PDV = () => {
         valor_unitario: precoKg,
         desconto: 0,
         valor_total: peso * precoKg,
+        estoque_disponivel: pesoProduto.movimenta_estoque === false ? null : Number(pesoProduto.estoque_atual ?? 0),
       }]);
     }
 
@@ -579,6 +640,11 @@ const PDV = () => {
       setPesoModalOpen(true);
       return;
     }
+    const check = verificarEstoque(produto, 1);
+    if (!check.ok) {
+      toast({ title: 'Estoque insuficiente', description: check.msg, variant: 'destructive' });
+      return;
+    }
     setItens(prev => [...prev, {
       id: crypto.randomUUID(),
       produto_id: produto.id,
@@ -589,6 +655,7 @@ const PDV = () => {
       valor_unitario: Number(produto.preco_venda),
       desconto: 0,
       valor_total: Number(produto.preco_venda),
+      estoque_disponivel: produto.movimenta_estoque === false ? null : Number(produto.estoque_atual ?? 0),
     }]);
     setStatus('processando');
   };
@@ -612,11 +679,26 @@ const PDV = () => {
   };
 
   const incrementItem = (idx: number) => {
-    setItens(prev => prev.map((item, i) => i === idx ? {
-      ...item,
-      quantidade: item.quantidade + 1,
-      valor_total: (item.quantidade + 1) * item.valor_unitario - item.desconto,
-    } : item));
+    const item = itens[idx];
+    if (!item) return;
+    const novaQtd = item.quantidade + 1;
+    // Sem produto_id (item avulso) ou sem controle de estoque → libera
+    if (item.produto_id && item.estoque_disponivel != null) {
+      const check = verificarEstoque(
+        { id: item.produto_id, descricao: item.descricao, estoque_atual: item.estoque_disponivel, unidade: item.unidade, movimenta_estoque: true },
+        novaQtd,
+        idx,
+      );
+      if (!check.ok) {
+        toast({ title: 'Estoque insuficiente', description: check.msg, variant: 'destructive' });
+        return;
+      }
+    }
+    setItens(prev => prev.map((it, i) => i === idx ? {
+      ...it,
+      quantidade: novaQtd,
+      valor_total: novaQtd * it.valor_unitario - it.desconto,
+    } : it));
   };
 
   const decrementItem = (idx: number) => {
@@ -634,11 +716,25 @@ const PDV = () => {
   const updateQuantidade = () => {
     const qty = parseFloat(newQtd);
     if (!qty || qty <= 0 || selectedItemIdx < 0) return;
-    setItens(prev => prev.map((item, idx) => idx === selectedItemIdx ? {
-      ...item,
+    const item = itens[selectedItemIdx];
+    if (!item) return;
+    // Valida estoque (ignora o próprio item na soma — vamos sobrescrever a qtd)
+    if (item.produto_id && item.estoque_disponivel != null) {
+      const check = verificarEstoque(
+        { id: item.produto_id, descricao: item.descricao, estoque_atual: item.estoque_disponivel, unidade: item.unidade, movimenta_estoque: true },
+        qty,
+        selectedItemIdx,
+      );
+      if (!check.ok) {
+        toast({ title: 'Estoque insuficiente', description: check.msg, variant: 'destructive' });
+        return;
+      }
+    }
+    setItens(prev => prev.map((it, idx) => idx === selectedItemIdx ? {
+      ...it,
       quantidade: qty,
-      valor_total: qty * item.valor_unitario - item.desconto,
-    } : item));
+      valor_total: qty * it.valor_unitario - it.desconto,
+    } : it));
     setQtdModalOpen(false);
   };
 
@@ -653,6 +749,18 @@ const PDV = () => {
     setDescModalOpen(false);
   };
 
+
+  /**
+   * Abre o modal de finalização. Reaproveitado pelo atalho F8 e pelo botão verde
+   * "FINALIZAR VENDA" do painel — garante comportamento idêntico (toast quando vazio).
+   */
+  const abrirFinalizar = () => {
+    if (itens.length === 0) {
+      toast({ title: '⚠️ Sem itens', description: 'Adicione produtos antes de finalizar' });
+      return;
+    }
+    setFinalizarModalOpen(true);
+  };
 
   const searchClientes = async () => {
     if (!clienteSearch.trim()) return;
@@ -747,6 +855,21 @@ const PDV = () => {
       });
       return;
     }
+
+    // Última barreira: bloqueia ENTER se valor recebido em dinheiro < total
+    if (metodoPagamento === 'dinheiro') {
+      const recebido = parseFloat(valorPago) || 0;
+      if (recebido + 0.01 < total) {
+        const falta = (total - recebido).toFixed(2).replace('.', ',');
+        toast({
+          title: 'Valor recebido insuficiente',
+          description: `Falta R$ ${falta}. Aumente o valor recebido ou troque a forma de pagamento.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     finalizandoRef.current = true;
     setFinalizando(true);
 
@@ -888,7 +1011,10 @@ const PDV = () => {
       setVendaNumero(v => String(parseInt(v) + 1).padStart(5, '0'));
 
     } catch (e: any) {
-      toast({ title: 'Erro ao finalizar', description: e.message, variant: 'destructive' });
+      // Backend pode retornar 422 com mensagem específica (estoque insuficiente,
+      // valor recebido insuficiente, etc) — preferimos essa ao genérico do axios.
+      const msg = e?.response?.data?.message || e?.message || 'Erro ao finalizar a venda';
+      toast({ title: 'Erro ao finalizar', description: msg, variant: 'destructive' });
     } finally {
       finalizandoRef.current = false;
       setFinalizando(false);
@@ -1308,8 +1434,7 @@ const PDV = () => {
 
               <div className="relative">
                 <Button
-                  onClick={() => { if (itens.length > 0) setFinalizarModalOpen(true); }}
-                  disabled={itens.length === 0}
+                  onClick={abrirFinalizar}
                   className="w-full h-12 bg-green-600 hover:bg-green-700 text-white font-bold text-base gap-2 rounded-lg"
                 >
                   <Check className="w-5 h-5" /> F8 - FINALIZAR VENDA
@@ -1570,6 +1695,22 @@ const PDV = () => {
                   if (!editProduto) return;
                   const qty = parseFloat(editProduto.quantidade) || 0;
                   const price = parseFloat(editProduto.valor_unitario) || 0;
+                  if (qty <= 0) {
+                    toast({ title: 'Quantidade inválida', description: 'A quantidade precisa ser maior que zero.', variant: 'destructive' });
+                    return;
+                  }
+                  const itemAtual = itens[editProduto.idx];
+                  if (itemAtual?.produto_id && itemAtual.estoque_disponivel != null) {
+                    const check = verificarEstoque(
+                      { id: itemAtual.produto_id, descricao: editProduto.descricao, estoque_atual: itemAtual.estoque_disponivel, unidade: editProduto.unidade, movimenta_estoque: true },
+                      qty,
+                      editProduto.idx,
+                    );
+                    if (!check.ok) {
+                      toast({ title: 'Estoque insuficiente', description: check.msg, variant: 'destructive' });
+                      return;
+                    }
+                  }
                   setItens(prev => prev.map((item, i) => i === editProduto.idx ? {
                     ...item,
                     descricao: editProduto.descricao,
@@ -1995,29 +2136,55 @@ const PDV = () => {
               </div>
             )}
 
-            {metodoPagamento === 'dinheiro' && (
-              <div className="space-y-2 bg-muted/30 rounded-lg p-2.5 border border-border">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold text-foreground">RECEBIDO (R$)</span>
-                  <Input
-                    value={valorPago}
-                    onChange={e => setValorPago(e.target.value)}
-                    placeholder={total.toFixed(2)}
-                    className="w-28 h-9 text-right bg-background border-border text-foreground text-base font-bold"
-                    type="number"
-                    step="0.01"
-                    autoFocus
-                    onKeyDown={e => { if (e.key === 'Enter' && !finalizando) { e.preventDefault(); e.stopPropagation(); finalizarVenda(); } }}
-                  />
-                </div>
-                {troco > 0 && (
-                  <div className="flex items-center justify-between bg-green-500/15 rounded-md px-2 py-1.5 border border-green-500/30">
-                    <span className="text-sm text-green-400 font-bold">TROCO</span>
-                    <span className="text-xl text-green-400 font-extrabold">R$ {troco.toFixed(2).replace('.', ',')}</span>
+            {metodoPagamento === 'dinheiro' && (() => {
+              const recebido = parseFloat(valorPago) || 0;
+              const falta = Math.max(0, total - recebido);
+              const insuficiente = recebido > 0 && recebido + 0.01 < total;
+              return (
+                <div className="space-y-2 bg-muted/30 rounded-lg p-2.5 border border-border">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-semibold text-foreground">RECEBIDO (R$)</span>
+                    <Input
+                      value={valorPago}
+                      onChange={e => setValorPago(e.target.value)}
+                      placeholder={total.toFixed(2)}
+                      className={`w-28 h-9 text-right bg-background border-border text-foreground text-base font-bold ${insuficiente ? 'border-destructive ring-2 ring-destructive/30' : ''}`}
+                      type="number"
+                      step="0.01"
+                      autoFocus
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' && !finalizando) {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          // Bloqueia ENTER se valor recebido for menor que o total
+                          if (recebido + 0.01 < total) {
+                            toast({
+                              title: 'Valor insuficiente',
+                              description: `Falta R$ ${falta.toFixed(2).replace('.', ',')}. Aumente o valor recebido ou troque a forma de pagamento.`,
+                              variant: 'destructive',
+                            });
+                            return;
+                          }
+                          finalizarVenda();
+                        }
+                      }}
+                    />
                   </div>
-                )}
-              </div>
-            )}
+                  {insuficiente && (
+                    <div className="flex items-center justify-between bg-destructive/15 rounded-md px-2 py-1.5 border border-destructive/40">
+                      <span className="text-sm text-destructive font-bold">FALTA</span>
+                      <span className="text-base text-destructive font-extrabold">R$ {falta.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  )}
+                  {troco > 0 && (
+                    <div className="flex items-center justify-between bg-green-500/15 rounded-md px-2 py-1.5 border border-green-500/30">
+                      <span className="text-sm text-green-400 font-bold">TROCO</span>
+                      <span className="text-xl text-green-400 font-extrabold">R$ {troco.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {cliente && <div className="flex justify-between text-sm"><span className="text-muted-foreground">Cliente:</span><span>{cliente.nome}</span></div>}
             {cpfNota && <div className="flex justify-between text-sm"><span className="text-muted-foreground">CPF na Nota:</span><span className="font-mono">{cpfNota}</span></div>}
@@ -2026,12 +2193,28 @@ const PDV = () => {
               <p className="text-xs text-zinc-500">Pressione <span className="font-bold text-white">ENTER</span> para confirmar a venda</p>
             </div>
           </div>
-          <div className="flex gap-2 mt-2">
-            <Button variant="outline" className="flex-1" onClick={() => setFinalizarModalOpen(false)}>ESC - Voltar</Button>
-            <Button className="flex-1 gap-1 bg-green-600 hover:bg-green-700 text-white" onClick={finalizarVenda} disabled={finalizando}>
-              <Check className="w-4 h-4" /> {finalizando ? 'PROCESSANDO...' : 'ENTER - CONFIRMAR'}
-            </Button>
-          </div>
+          {(() => {
+            // Recebido insuficiente em dinheiro bloqueia confirmação.
+            // Outros métodos (débito/crédito/PIX) cobrem o total automaticamente.
+            // Fiado sem cliente também bloqueia.
+            const recebido = parseFloat(valorPago) || 0;
+            const dinheiroInsuficiente = metodoPagamento === 'dinheiro' && recebido + 0.01 < total;
+            const fiadoSemCliente = metodoPagamento === 'fiado' && !cliente;
+            const bloqueado = finalizando || dinheiroInsuficiente || fiadoSemCliente;
+            return (
+              <div className="flex gap-2 mt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setFinalizarModalOpen(false)}>ESC - Voltar</Button>
+                <Button
+                  className="flex-1 gap-1 bg-green-600 hover:bg-green-700 text-white disabled:bg-zinc-500 disabled:opacity-70"
+                  onClick={finalizarVenda}
+                  disabled={bloqueado}
+                  title={dinheiroInsuficiente ? `Falta R$ ${Math.max(0, total - recebido).toFixed(2).replace('.', ',')}` : fiadoSemCliente ? 'Identifique o cliente (F2)' : ''}
+                >
+                  <Check className="w-4 h-4" /> {finalizando ? 'PROCESSANDO...' : 'ENTER - CONFIRMAR'}
+                </Button>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 

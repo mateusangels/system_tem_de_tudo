@@ -18,7 +18,8 @@ export type VendaPorDia = {
 
 export type DashboardCompleto = {
   totais: {
-    vendas_total: number;
+    vendas_total: number;     // Bruto vendido (independente de quanto foi pago)
+    recebido_total: number;   // Caixa real (valor_pago + adiantamento de fiado)
     qtd_vendas: number;
     ticket_medio: number;
     produtos_baixo: number;

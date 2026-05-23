@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState, useMemo } from 'react';
 import {
   DollarSign, TrendingUp, ShoppingCart, AlertTriangle, Calendar,
-  Package, User, Wallet, Boxes,
+  Package, User, Wallet, Boxes, HandCoins,
 } from 'lucide-react';
 import { dashboardApi, type DashboardCompleto } from '@/lib/api/index';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -120,11 +120,16 @@ const Dashboard = () => {
       </div>
 
       {/* KPIs principais */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
         <div className="card-industrial p-4 pl-5">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-muted-foreground"><ShoppingCart className="w-4 h-4" /> Vendido</div>
           <p className="text-2xl font-extrabold mt-1">{formatBRL(totais.vendas_total)}</p>
-          <p className="text-[11px] text-muted-foreground mt-0.5">{totais.qtd_vendas} vendas</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">{totais.qtd_vendas} vendas (bruto)</p>
+        </div>
+        <div className="card-industrial p-4 pl-5">
+          <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-success"><HandCoins className="w-4 h-4" /> Recebido</div>
+          <p className="text-2xl font-extrabold mt-1 text-success">{formatBRL(totais.recebido_total ?? 0)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">caixa real (sem fiado em aberto)</p>
         </div>
         <div className="card-industrial p-4 pl-5">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-muted-foreground"><DollarSign className="w-4 h-4" /> Ticket médio</div>

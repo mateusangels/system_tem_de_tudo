@@ -198,6 +198,15 @@ const Produtos = () => {
       } else {
         await produtosApi.create(payload);
         toast({ title: 'Produto cadastrado com sucesso!' });
+        // Alerta se cadastrou com estoque zero e o produto movimenta estoque —
+        // erro comum: esquecer de informar o estoque inicial e depois não conseguir vender.
+        if (payload.movimenta_estoque && payload.estoque_atual <= 0) {
+          toast({
+            title: '⚠️ Estoque inicial não informado',
+            description: 'Este produto foi cadastrado com estoque 0. Lembre de adicionar a quantidade em /estoque → "Nova movimentação" antes de tentar vender.',
+            duration: 8000,
+          });
+        }
       }
       setModalOpen(false);
       fetchProdutos();
@@ -531,6 +540,16 @@ const Produtos = () => {
                   <Input type="number" value={form.estoque_minimo} onChange={e => setForm(f => ({ ...f, estoque_minimo: e.target.value }))} className="mt-1" />
                 </div>
               </div>
+              {/* Alerta inline: estoque inicial não informado */}
+              {form.movimenta_estoque && (parseFloat(String(form.estoque_atual)) || 0) <= 0 && !editingProduto && (
+                <div className="bg-amber-500/10 border border-amber-500/40 rounded-md p-2 text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2">
+                  <span className="text-base leading-none mt-0.5">⚠️</span>
+                  <span>
+                    <strong>Atenção:</strong> estoque inicial está zerado. Sem estoque, o PDV não vai deixar vender este produto.
+                    Informe a quantidade aqui ou faça uma entrada em /estoque depois.
+                  </span>
+                </div>
+              )}
 
               <div>
                 <Label className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Observação (opcional)</Label>

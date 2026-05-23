@@ -25,9 +25,18 @@ export type MovimentacaoEstoque = {
 export type ResumoEstoque = {
   total_produtos: number;
   abaixo_minimo: number;
+  estoque_negativo: number;
   valor_em_estoque_custo: number;
   valor_em_estoque_venda: number;
   margem_potencial: number;
+};
+
+export type ProdutoNegativo = {
+  id: string;
+  codigo_barras: string;
+  descricao: string;
+  unidade: string;
+  estoque_atual: number;
 };
 
 export const estoqueApi = {
@@ -48,6 +57,11 @@ export const estoqueApi = {
 
   async ruptura(): Promise<{ produtos: any[] }> {
     const { data } = await api.get<{ produtos: any[] }>("/estoque/ruptura");
+    return data;
+  },
+
+  async negativos(): Promise<{ produtos: ProdutoNegativo[] }> {
+    const { data } = await api.get<{ produtos: ProdutoNegativo[] }>("/estoque/negativos");
     return data;
   },
 };

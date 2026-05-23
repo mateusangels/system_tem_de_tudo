@@ -85,23 +85,47 @@ class EstoqueController extends Controller
             ->where('movimenta_estoque', true)
             ->count();
 
+        // GREATEST(estoque_atual, 0) trava em zero produtos com estoque negativo —
+        // garante que métricas de valor nunca fiquem absurdamente negativas mesmo
+        // se algum produto teve estoque vendido além do disponível por erro antigo.
         $valorCusto = (float) Produto::where('ativo', true)
             ->where('movimenta_estoque', true)
-            ->select(DB::raw('SUM(estoque_atual * preco_custo) AS v'))
+            ->select(DB::raw('SUM(GREATEST(estoque_atual, 0) * preco_custo) AS v'))
             ->value('v');
 
         $valorVenda = (float) Produto::where('ativo', true)
             ->where('movimenta_estoque', true)
-            ->select(DB::raw('SUM(estoque_atual * preco_venda) AS v'))
+            ->select(DB::raw('SUM(GREATEST(estoque_atual, 0) * preco_venda) AS v'))
             ->value('v');
+
+        // Quantos produtos têm estoque negativo (precisa ajuste manual)
+        $negativos = Produto::where('ativo', true)
+            ->where('movimenta_estoque', true)
+            ->where('estoque_atual', '<', 0)
+            ->count();
 
         return response()->json([
             'total_produtos' => $total,
             'abaixo_minimo' => $baixo,
+            'estoque_negativo' => $negativos,
             'valor_em_estoque_custo' => $valorCusto,
             'valor_em_estoque_venda' => $valorVenda,
             'margem_potencial' => $valorVenda - $valorCusto,
         ]);
+    }
+
+    /**
+     * Lista produtos com estoque negativo (precisam ajuste manual).
+     */
+    public function negativos(): JsonResponse
+    {
+        $produtos = Produto::where('ativo', true)
+            ->where('movimenta_estoque', true)
+            ->where('estoque_atual', '<', 0)
+            ->orderBy('estoque_atual')
+            ->get(['id', 'codigo_barras', 'descricao', 'unidade', 'estoque_atual']);
+
+        return response()->json(['produtos' => $produtos]);
     }
 
     /**

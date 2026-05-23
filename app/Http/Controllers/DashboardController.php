@@ -17,6 +17,10 @@ class DashboardController extends Controller
         $hoje = now()->startOfDay();
         $inicioMes = now()->startOfMonth();
 
+        // Recebido = valor_pago (dinheiro/débito/credito/pix) + valor_pago_fiado
+        // (adiantamento entregue na hora pra venda fiada). Reflete caixa real.
+        $recebidoExpr = 'COALESCE(valor_pago, 0) + COALESCE(valor_pago_fiado, 0)';
+
         return response()->json([
             'clientes_total' => Cliente::count(),
             'clientes_ativos' => Cliente::where('status', 'ativo')->count(),
@@ -27,10 +31,18 @@ class DashboardController extends Controller
                 ->count(),
             'vendas_hoje_quantidade' => Venda::where('created_at', '>=', $hoje)
                 ->where('status', 'finalizada')->count(),
+            // "vendido" = soma do total bruto (mesmo que ainda não recebido pra fiados)
             'vendas_hoje_total' => (float) Venda::where('created_at', '>=', $hoje)
                 ->where('status', 'finalizada')->sum('total'),
             'vendas_mes_total' => (float) Venda::where('created_at', '>=', $inicioMes)
                 ->where('status', 'finalizada')->sum('total'),
+            // "recebido" = caixa real (paga + adiantamento de fiado)
+            'recebido_hoje' => (float) Venda::where('created_at', '>=', $hoje)
+                ->where('status', 'finalizada')
+                ->selectRaw("SUM($recebidoExpr) AS v")->value('v'),
+            'recebido_mes' => (float) Venda::where('created_at', '>=', $inicioMes)
+                ->where('status', 'finalizada')
+                ->selectRaw("SUM($recebidoExpr) AS v")->value('v'),
         ]);
     }
 
@@ -65,13 +77,19 @@ class DashboardController extends Controller
         $totalVendas = (float) $vendasBase()->sum('vendas.total');
         $qtdVendas = (int) $vendasBase()->count();
         $ticketMedio = $qtdVendas > 0 ? $totalVendas / $qtdVendas : 0;
+        // Recebido no caixa = valor_pago + adiantamento de fiado
+        $totalRecebido = (float) $vendasBase()
+            ->selectRaw('SUM(COALESCE(vendas.valor_pago, 0) + COALESCE(vendas.valor_pago_fiado, 0)) AS v')
+            ->value('v');
         $produtosBaixo = Produto::where('ativo', true)
             ->where('movimenta_estoque', true)
             ->whereColumn('estoque_atual', '<=', 'estoque_minimo')
             ->count();
+        // GREATEST(estoque_atual, 0) protege contra produtos com estoque negativo
+        // (que zerariam ou puxariam o valor pra baixo de forma absurda).
         $valorEstoque = (float) Produto::where('ativo', true)
             ->where('movimenta_estoque', true)
-            ->select(DB::raw('SUM(estoque_atual * preco_custo) AS v'))
+            ->select(DB::raw('SUM(GREATEST(estoque_atual, 0) * preco_custo) AS v'))
             ->value('v');
 
         // Vendas por funcionário
@@ -134,6 +152,7 @@ class DashboardController extends Controller
         return response()->json([
             'totais' => [
                 'vendas_total' => $totalVendas,
+                'recebido_total' => $totalRecebido,
                 'qtd_vendas' => $qtdVendas,
                 'ticket_medio' => $ticketMedio,
                 'produtos_baixo' => $produtosBaixo,

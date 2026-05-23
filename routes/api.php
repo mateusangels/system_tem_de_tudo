@@ -44,6 +44,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/estoque/ajustar', [EstoqueController::class, 'ajustar']);
     Route::get('/estoque/resumo', [EstoqueController::class, 'resumo']);
     Route::get('/estoque/ruptura', [EstoqueController::class, 'ruptura']);
+    Route::get('/estoque/negativos', [EstoqueController::class, 'negativos']);
 
     // Vendas (PDV)
     Route::get('/vendas/proximo-numero', [VendasController::class, 'proximoNumero']);
