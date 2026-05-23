@@ -36,7 +36,9 @@ Thumbs.db
 !/storage/framework/cache/.gitignore
 !/storage/framework/sessions/.gitignore
 !/storage/framework/views/.gitignore
-/vendor
+# Vendor é commitado porque a Hostinger compartilhada não tem o phar do composer.
+# Faça `composer install --no-dev --optimize-autoloader` local e commite a pasta.
+# /vendor
 /bootstrap/ssr
 /bootstrap/cache/*.php
 .phpunit.result.cache
