@@ -27,15 +27,16 @@ if [ -d .git ]; then
 fi
 
 # 2. Dependências PHP
-if command -v composer >/dev/null 2>&1; then
+# Prioriza vendor/ commitado (Hostinger compartilhada quebra composer por falta de phar).
+# Só roda composer install se NÃO houver vendor/.
+if [ -d vendor ] && [ -f vendor/autoload.php ]; then
+  echo "▸ vendor/ encontrado — pulando composer install"
+elif command -v composer >/dev/null 2>&1; then
   echo "▸ composer install"
   composer install --no-dev --optimize-autoloader --no-interaction
-elif [ ! -d vendor ]; then
-  echo "✗ composer não encontrado e vendor/ não existe."
-  echo "  Faça upload da pasta vendor/ via SFTP OU habilite phar no PHP do hPanel."
-  exit 1
 else
-  echo "▸ composer indisponível mas vendor/ já existe — pulando"
+  echo "✗ Nem vendor/ nem composer disponível. Faça composer install local e commite vendor/."
+  exit 1
 fi
 
 # 3. Build do frontend (só se tiver node — caso contrário usa o build commitado)
