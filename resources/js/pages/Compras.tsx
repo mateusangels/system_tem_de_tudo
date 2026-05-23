@@ -265,7 +265,7 @@ export default function Compras() {
         </div>
       </PageHeader>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-card rounded-lg border border-border p-4">
           <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground">Total pedido</p>
           <p className="text-2xl font-extrabold mt-1">{formatBRL(totalPedido)}</p>
@@ -292,7 +292,8 @@ export default function Compras() {
             <p className="text-xs mt-1">Cadastre o primeiro fornecedor pra começar.</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[720px]">
             <thead className="bg-muted/20 border-b border-border">
               <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 <th className="text-left p-3">Número</th>
@@ -324,6 +325,7 @@ export default function Compras() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
 

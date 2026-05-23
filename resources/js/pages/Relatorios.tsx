@@ -105,7 +105,7 @@ export default function Relatorios() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="card-industrial p-4 pl-5">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-muted-foreground"><ShoppingCart className="w-4 h-4" /> Vendido</div>
           <p className="text-2xl font-extrabold mt-1">{formatBRL(totais.vendas_total)}</p>
@@ -184,7 +184,7 @@ export default function Relatorios() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Vendas por operador */}
         <div className="bg-card rounded-lg border border-border p-5">
           <h3 className="text-sm font-extrabold uppercase tracking-wider mb-3 flex items-center gap-2"><User className="w-4 h-4 text-primary" /> Vendas por operador</h3>
@@ -243,7 +243,8 @@ export default function Relatorios() {
           <h3 className="text-sm font-extrabold uppercase tracking-wider flex items-center gap-2"><Package className="w-4 h-4 text-primary" /> Top 15 produtos mais vendidos</h3>
         </div>
         {top_produtos.length === 0 ? <p className="p-6 text-sm text-muted-foreground text-center">Sem dados</p> : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[520px]">
             <thead className="bg-muted/20 border-b border-border">
               <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 <th className="text-left p-3">#</th>
@@ -263,6 +264,7 @@ export default function Relatorios() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

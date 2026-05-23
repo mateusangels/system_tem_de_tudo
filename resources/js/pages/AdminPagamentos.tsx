@@ -116,7 +116,7 @@ export default function AdminPagamentos() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-card rounded-lg border border-border p-4">
           <div className="flex items-center gap-2 text-xs uppercase tracking-wider font-bold text-muted-foreground"><Clock className="w-4 h-4" /> Pendentes</div>
           <p className="text-2xl font-extrabold mt-1">{pendentes}</p>
@@ -151,7 +151,8 @@ export default function AdminPagamentos() {
 
       {loading ? <LoadingState /> : (
         <div className="bg-card rounded-lg border border-border overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[640px]">
             <thead className="bg-muted/30 border-b border-border">
               <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 <th className="text-left p-3">Cliente</th>
@@ -200,6 +201,7 @@ export default function AdminPagamentos() {
               )}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 

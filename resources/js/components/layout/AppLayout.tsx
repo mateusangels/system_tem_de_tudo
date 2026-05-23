@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { AppSidebar } from './AppSidebar';
 import { AppHeader } from './AppHeader';
@@ -8,6 +9,7 @@ export const AppLayout = () => {
   const { user } = useAuth();
   const isAdmin = (user as any)?.is_admin;
   const licenca = (user as any)?.licenca;
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Dono com trial expirado e sem licença ativa → overlay bloqueante
   const trialExpiradoBloqueando =
@@ -17,10 +19,10 @@ export const AppLayout = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppSidebar />
-      <div className="ml-60">
-        <AppHeader />
-        <main className="p-6">
+      <AppSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <div className="md:ml-60">
+        <AppHeader onToggleSidebar={() => setSidebarOpen(true)} />
+        <main className="p-3 sm:p-4 md:p-6">
           <Outlet />
         </main>
       </div>

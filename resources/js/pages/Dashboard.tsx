@@ -108,7 +108,7 @@ const Dashboard = () => {
       </div>
 
       {/* KPIs principais */}
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         <div className="card-industrial p-4 pl-5">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-muted-foreground"><ShoppingCart className="w-4 h-4" /> Vendido</div>
           <p className="text-2xl font-extrabold mt-1">{formatBRL(totais.vendas_total)}</p>
@@ -157,7 +157,7 @@ const Dashboard = () => {
       </div>
 
       {/* 3 colunas */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="bg-card rounded-lg border border-border p-5">
           <h3 className="text-sm font-extrabold uppercase tracking-wider mb-3 flex items-center gap-2"><User className="w-4 h-4 text-primary" /> Vendas por operador</h3>
           {vendas_por_funcionario.length === 0 ? (

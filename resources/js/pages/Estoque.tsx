@@ -88,7 +88,7 @@ export default function Estoque() {
         </Button>
       </PageHeader>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <div className="bg-card rounded-lg border border-border p-4">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-muted-foreground"><Package className="w-4 h-4" /> Produtos ativos</div>
           <p className="text-2xl font-extrabold mt-1">{resumo.total_produtos}</p>
@@ -114,7 +114,7 @@ export default function Estoque() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         {/* Ruptura */}
         <div className="bg-card rounded-lg border border-border overflow-hidden">
           <div className="px-5 py-3 border-b border-border bg-muted/40 flex items-center justify-between">
@@ -123,7 +123,7 @@ export default function Estoque() {
             </h3>
             <span className="text-[11px] text-muted-foreground">{ruptura.length} produtos</span>
           </div>
-          <div className="max-h-[480px] overflow-y-auto">
+          <div className="max-h-[480px] overflow-auto">
             {ruptura.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">
                 <Wrench className="w-12 h-12 mx-auto opacity-30 mb-2" strokeWidth={1.2} />
@@ -165,7 +165,7 @@ export default function Estoque() {
             </h3>
             <span className="text-[11px] text-muted-foreground">{movs.length}</span>
           </div>
-          <div className="max-h-[480px] overflow-y-auto">
+          <div className="max-h-[480px] overflow-auto">
             {movs.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">Nenhuma movimentação registrada.</div>
             ) : (

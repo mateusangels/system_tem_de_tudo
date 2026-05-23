@@ -44,7 +44,7 @@ export default function Financeiro() {
     <div className="space-y-6 animate-fade-up">
       <PageHeader title="Financeiro" description="Entradas, saídas e movimento de caixa" />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-card rounded-lg border border-border p-5">
           <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider font-bold text-muted-foreground"><Calendar className="w-4 h-4" /> Vendas hoje</div>
           <p className="text-3xl font-extrabold mt-2 text-primary">{formatBRL(totalHoje)}</p>

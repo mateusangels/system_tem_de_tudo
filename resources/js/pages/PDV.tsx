@@ -884,18 +884,40 @@ const PDV = () => {
       {/* Faixa de obra topo */}
       <div className="h-1.5 stripe-construction" />
       {/* TOP BAR */}
-      <header className="relative z-20 flex items-center justify-between px-4 py-2 bg-black border-b border-zinc-800 shadow-lg">
-        <div className="flex items-center gap-3">
-          <button onClick={() => navigate('/produtos')} className="p-1 rounded-lg hover:bg-white/10 transition-colors">
-            <img src="/fundopdv.png" alt="Tem de Tudo" className="h-10 w-auto object-contain" />
+      <header className="relative z-20 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2 px-3 sm:px-4 py-2 bg-black border-b border-zinc-800 shadow-lg">
+        <div className="flex items-center justify-between gap-3">
+          <button onClick={() => navigate('/produtos')} className="p-1 rounded-lg hover:bg-white/10 transition-colors flex items-center gap-2">
+            <img src="/fundopdv.png" alt="Tem de Tudo" className="h-8 sm:h-10 w-auto object-contain" />
           </button>
-          <div>
+          <div className="hidden sm:block flex-1">
             <h1 className="text-sm font-extrabold tracking-wide text-white">PDV — Frente de Caixa</h1>
             <p className="text-[10px] text-primary">Terminal {String(numeroCaixa).padStart(2, '0')} · Caixa {numeroCaixa}</p>
           </div>
+          {/* Indicadores e botão fechar caixa — também no mobile (à direita do logo) */}
+          <div className="flex items-center gap-2 lg:hidden">
+            {isSyncing ? (
+              <Loader2 className="w-4 h-4 text-yellow-300 animate-spin" />
+            ) : isOnline ? (
+              <Wifi className="w-4 h-4 text-green-300" />
+            ) : (
+              <WifiOff className="w-4 h-4 text-red-300animate-pulse" />
+            )}
+            {pendingCount > 0 && (
+              <button onClick={() => { if (isOnline) syncNow(); }} className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-orange-500/20 border border-orange-400/30">
+                <CloudUpload className="w-3 h-3 text-orange-300" />
+                <span className="text-[10px] font-bold text-orange-300">{pendingCount}</span>
+              </button>
+            )}
+            <span className={`w-2 h-2 rounded-full ${caixaAberto ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+            {caixaAberto && (
+              <Button variant="outline" size="sm" onClick={prepararFechamento} className="gap-1 text-red-300 border-red-400/40 hover:bg-red-500/20 hover:text-red-200 h-7 px-2 text-[10px]">
+                <DoorClosed className="w-3.5 h-3.5" /> Fechar
+              </Button>
+            )}
+          </div>
         </div>
 
-        <div className="flex-1 max-w-xl mx-6">
+        <div className="flex-1 lg:max-w-xl lg:mx-6">
           <div className="relative">
             <BarCodeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 z-10" />
             <Input
@@ -951,7 +973,7 @@ const PDV = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-4">
           {/* Indicador Online/Offline */}
           <div className="flex items-center gap-2">
             {isSyncing ? (
@@ -1020,9 +1042,9 @@ const PDV = () => {
           </div>
         </div>
       ) : (
-        <div className="relative z-10 flex flex-1 overflow-hidden">
+        <div className="relative z-10 flex flex-col lg:flex-row flex-1 overflow-hidden">
           {/* LEFT: Product list */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-h-0">
             <div className="flex-1 p-3 overflow-hidden flex flex-col">
               <div className="flex-1 bg-card rounded-lg border border-border overflow-auto shadow-sm relative">
                 <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -1141,8 +1163,8 @@ const PDV = () => {
             </div>
           </div>
 
-          {/* RIGHT: Summary panel */}
-          <div className="w-[320px] flex flex-col border-l border-border bg-card">
+          {/* RIGHT: Summary panel (vira inferior no mobile) */}
+          <div className="w-full lg:w-[320px] flex flex-col border-t lg:border-t-0 lg:border-l border-border bg-card">
             <div className="p-3 border-b border-border">
               {cliente ? (
                 <div>

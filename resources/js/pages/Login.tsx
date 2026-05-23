@@ -111,9 +111,20 @@ const Login = () => {
             </p>
           </div>
 
-          <p className="text-center text-[10px] text-white/40 mt-6 font-mono">
-            v1.0.0 · Sistema desenvolvido por Mateus Angels
-          </p>
+          <div className="text-center mt-6 space-y-1">
+            <p className="text-[10px] text-white/40 font-mono">v1.0.0</p>
+            <p className="text-[11px] text-white/60 font-semibold">
+              Desenvolvido por <span className="text-primary">NexorBusiness</span>
+            </p>
+            <a
+              href="https://instagram.com/nexorbusiness"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-white/40 hover:text-white/70 transition-colors inline-block"
+            >
+              @nexorbusiness
+            </a>
+          </div>
         </div>
       </div>
 

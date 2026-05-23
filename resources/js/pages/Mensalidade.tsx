@@ -63,7 +63,7 @@ export default function Mensalidade() {
       <PageHeader title="Mensalidade do sistema" description="Pagamento mensal pelo uso do TEM DE TUDO" />
 
       {/* Status do trial / licença */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className={`rounded-lg p-5 border-2 ${
           usuario.em_trial ? 'border-primary bg-primary/5' :
           usuario.licenca_ativa ? 'border-success/40 bg-success/5' :
@@ -117,7 +117,7 @@ export default function Mensalidade() {
           <h3 className="font-bold text-sm uppercase tracking-wider">Como pagar — PIX</h3>
         </div>
 
-        <div className="grid grid-cols-2 gap-6 p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 sm:p-6">
           <div className="space-y-4">
             <div>
               <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground mb-1">Beneficiário</p>
@@ -188,7 +188,8 @@ export default function Mensalidade() {
             <p className="text-xs mt-1">A primeira será lançada ao fim do período de teste.</p>
           </div>
         ) : (
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[560px]">
             <thead className="bg-muted/30 border-b border-border">
               <tr className="text-[11px] uppercase tracking-wider text-muted-foreground">
                 <th className="text-left p-3">Referência</th>
@@ -212,6 +213,7 @@ export default function Mensalidade() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>
